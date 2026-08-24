@@ -15,12 +15,14 @@ func (s *State) ShouldFlush(stream string) bool {
 	return !s.flushed[stream]
 }
 
-func (s *State) MarkAttempt(stream string) {
-	s.mu.Lock()
-	s.flushed[stream] = true
-	s.mu.Unlock()
-}
+// MarkAttempt records that a flush was attempted but must NOT advance the
+// checkpoint: a failed attempt must remain retryable, so flushed[stream] stays
+// false until MarkSuccess. Advancing here would make the next ShouldFlush
+// return false and silently drop the retry.
+func (s *State) MarkAttempt(stream string) {}
 
+// MarkSuccess advances the checkpoint for a stream after its batch has been
+// durably written to the sink.
 func (s *State) MarkSuccess(stream string) {
 	s.mu.Lock()
 	s.flushed[stream] = true
