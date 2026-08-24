@@ -6,21 +6,19 @@ import (
 )
 
 type Guard struct {
-	mu      sync.Mutex
-	blocked map[string]bool
+	mu sync.Mutex
 }
 
-func New() *Guard { return &Guard{blocked: make(map[string]bool)} }
+func New() *Guard { return &Guard{} }
 
+// Run executes fn, recovering any panic and converting it to an error scoped to
+// THIS call only. A panic must not durably block the route: the decoder may be
+// replaced between requests, so each call gets a fresh chance to run.
 func (g *Guard) Run(route string, fn func() string) (value string, err error) {
 	g.mu.Lock()
 	defer g.mu.Unlock()
-	if g.blocked[route] {
-		return "", fmt.Errorf("route %s remains blocked after panic", route)
-	}
 	defer func() {
 		if recovered := recover(); recovered != nil {
-			g.blocked[route] = true
 			value = ""
 			err = fmt.Errorf("decoder panic: %v", recovered)
 		}

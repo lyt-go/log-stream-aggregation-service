@@ -21,11 +21,12 @@ func (r *Registry) RegisterNil(route string) {
 	r.mu.Unlock()
 }
 
+// Register sets the decoder for a route, replacing any prior entry including a
+// typed-nil placeholder installed by RegisterNil. Without replacement a route
+// first registered as a typed nil could never be upgraded to a real decoder.
 func (r *Registry) Register(route, prefix string) {
 	r.mu.Lock()
-	if _, exists := r.entries[route]; !exists {
-		r.entries[route] = &TextDecoder{Prefix: prefix}
-	}
+	r.entries[route] = &TextDecoder{Prefix: prefix}
 	r.mu.Unlock()
 }
 
