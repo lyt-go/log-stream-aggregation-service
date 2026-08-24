@@ -2,15 +2,14 @@ package panicworker
 
 import "fmt"
 
-type Worker struct{ poisoned bool }
+// Worker 是无状态的：每次 Execute 调用相互独立。
+// 某个批次的 decoder panic 被恢复后，不得污染后续批次的执行，
+// 因此不再保留跨调用的 poisoned 状态。
+type Worker struct{}
 
 func (w *Worker) Execute(payload string) (result string, err error) {
-	if w.poisoned {
-		return "", fmt.Errorf("worker remains poisoned")
-	}
 	defer func() {
 		if recovered := recover(); recovered != nil {
-			w.poisoned = true
 			result = ""
 			err = fmt.Errorf("worker panic: %v", recovered)
 		}
